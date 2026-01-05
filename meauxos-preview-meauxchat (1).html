@@ -1,0 +1,1544 @@
+<!DOCTYPE html>
+<html lang="en" data-brand="meauxos">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MeauxChat • Group Call • MeauxOS</title>
+  <style>
+    /* =========================================================
+       RESET & BASE
+       ========================================================= */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      /* MeauxOS Theme (default - Blue/Indigo) */
+      --bg: #f5f7fa;
+      --bg-gradient: linear-gradient(135deg, #e8ecf3 0%, #f5f7fa 100%);
+      --surface-0: #ffffff;
+      --surface-1: rgba(255, 255, 255, 0.95);
+      --surface-2: rgba(255, 255, 255, 0.85);
+      --border-subtle: rgba(0, 0, 0, 0.06);
+      --text-primary: #1a202c;
+      --text-secondary: #4a5568;
+      --text-muted: #718096;
+      --accent: #4f46e5;
+      --accent2: #6366f1;
+      --accent-hover: #4338ca;
+      --accent-glow: rgba(79, 70, 229, 0.15);
+      
+      /* Sidebar (glassmorphic with color) */
+      --sidebar-bg: linear-gradient(180deg, #4f46e5 0%, #6366f1 100%);
+      --sidebar-glass: rgba(79, 70, 229, 0.95);
+      --sidebar-border: rgba(255, 255, 255, 0.15);
+      --sidebar-text: #ffffff;
+      --sidebar-text-muted: rgba(255, 255, 255, 0.7);
+      --sidebar-hover: rgba(255, 255, 255, 0.1);
+      --sidebar-active: rgba(255, 255, 255, 0.2);
+      
+      /* Radii */
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 24px;
+      
+      /* Shadows */
+      --shadow-soft: 0 2px 12px rgba(0, 0, 0, 0.08);
+      --shadow-lift: 0 8px 32px rgba(0, 0, 0, 0.12);
+      --shadow-glow: 0 0 32px var(--accent-glow);
+      
+      /* Glass */
+      --glass-bg: rgba(255, 255, 255, 0.85);
+      --glass-border: rgba(255, 255, 255, 0.3);
+      --glass-blur: 24px;
+      
+      /* Spacing */
+      --topbar-height: 72px;
+      --sidenav-width: 260px;
+      --dock-height: 72px;
+      --sidebar-width: 360px;
+    }
+
+    /* MeauxBility Theme (Teal/Green) */
+    [data-brand="meauxbility"] {
+      --accent: #059669;
+      --accent2: #10b981;
+      --accent-hover: #047857;
+      --accent-glow: rgba(5, 150, 105, 0.15);
+      --sidebar-bg: linear-gradient(180deg, #059669 0%, #10b981 100%);
+      --sidebar-glass: rgba(5, 150, 105, 0.95);
+    }
+
+    /* InnerAnimalMedia Theme (Mint/Teal) */
+    [data-brand="inneranimalmedia"] {
+      --accent: #14b8a6;
+      --accent2: #2dd4bf;
+      --accent-hover: #0f766e;
+      --accent-glow: rgba(20, 184, 166, 0.15);
+      --sidebar-bg: linear-gradient(180deg, #14b8a6 0%, #2dd4bf 100%);
+      --sidebar-glass: rgba(20, 184, 166, 0.95);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: var(--bg-gradient);
+      color: var(--text-primary);
+      overflow: hidden;
+      height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* =========================================================
+       LAYOUT GRID
+       ========================================================= */
+    .app-shell {
+      display: grid;
+      grid-template-rows: var(--topbar-height) 1fr var(--dock-height);
+      grid-template-columns: var(--sidenav-width) 1fr var(--sidebar-width);
+      height: 100vh;
+      grid-template-areas:
+        "sidenav topbar topbar"
+        "sidenav main sidebar"
+        "dock dock dock";
+    }
+
+    /* =========================================================
+       TOPBAR
+       ========================================================= */
+    .topbar {
+      grid-area: topbar;
+      background: var(--glass-bg);
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      padding: 0 32px;
+      gap: 24px;
+      z-index: 100;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    }
+
+    .brand {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--accent);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+    }
+
+    .tenant-selector {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 16px;
+      background: var(--surface-0);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .tenant-selector:hover {
+      border-color: var(--accent);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-lift);
+    }
+
+    .tenant-icon {
+      width: 24px;
+      height: 24px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 12px;
+    }
+
+    .search-box {
+      flex: 1;
+      max-width: 520px;
+      position: relative;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 12px 18px 12px 44px;
+      background: var(--surface-0);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      color: var(--text-primary);
+      font-size: 14px;
+      font-weight: 400;
+      outline: none;
+      transition: all 0.2s ease;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .search-input:focus {
+      background: var(--surface-0);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px var(--accent-glow), var(--shadow-lift);
+    }
+
+    .search-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .kbd-hint {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 12px;
+      color: var(--text-muted);
+      background: var(--bg);
+      padding: 3px 7px;
+      border-radius: 4px;
+      border: 1px solid var(--border-subtle);
+      font-weight: 500;
+    }
+
+    .topbar-actions {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .icon-btn {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--surface-0);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .icon-btn:hover {
+      background: var(--surface-0);
+      color: var(--accent);
+      border-color: var(--accent);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lift);
+    }
+
+    .icon-btn .badge {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      width: 18px;
+      height: 18px;
+      background: var(--accent);
+      color: white;
+      border-radius: 50%;
+      font-size: 10px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid var(--surface-0);
+    }
+
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 600;
+      color: white;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 2px solid var(--surface-0);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .user-avatar:hover {
+      transform: scale(1.05);
+      box-shadow: 0 0 20px var(--accent-glow), var(--shadow-lift);
+    }
+
+    /* =========================================================
+       SIDENAV
+       ========================================================= */
+    .sidenav {
+      grid-area: sidenav;
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--sidebar-border);
+      padding: 24px 20px;
+      overflow-y: auto;
+      z-index: 50;
+      box-shadow: 4px 0 24px rgba(0, 0, 0, 0.08);
+    }
+
+    .sidenav-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      margin-bottom: 32px;
+    }
+
+    .sidenav-logo {
+      width: 40px;
+      height: 40px;
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 20px;
+      font-weight: 700;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .sidenav-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--sidebar-text);
+      letter-spacing: -0.02em;
+    }
+
+    .nav-section {
+      margin-bottom: 32px;
+    }
+
+    .nav-section-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--sidebar-text-muted);
+      margin-bottom: 12px;
+      padding: 0 12px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-radius: var(--radius-md);
+      color: var(--sidebar-text);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+      margin-bottom: 6px;
+      border: 1px solid transparent;
+    }
+
+    .nav-item:hover {
+      background: var(--sidebar-hover);
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .nav-item.active {
+      background: var(--sidebar-active);
+      border-color: rgba(255, 255, 255, 0.2);
+      font-weight: 600;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .nav-icon {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--sidebar-text);
+    }
+
+    .nav-item.active .nav-icon {
+      color: white;
+    }
+
+    .nav-badge {
+      margin-left: auto;
+      padding: 3px 8px;
+      background: rgba(255, 255, 255, 0.25);
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      color: white;
+    }
+
+    /* =========================================================
+       MAIN CONTENT (CALL STAGE)
+       ========================================================= */
+    .main-content {
+      grid-area: main;
+      background: transparent;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stage-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px;
+      position: relative;
+    }
+
+    .stage-bg-gradient {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: radial-gradient(ellipse at center, rgba(79, 70, 229, 0.03), transparent 70%);
+      pointer-events: none;
+    }
+
+    .stage-card {
+      position: relative;
+      width: 100%;
+      max-width: 1600px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      box-shadow: var(--shadow-lift);
+    }
+
+    .video-stage {
+      position: relative;
+      padding-top: 56.25%;
+      background: #000;
+    }
+
+    .video-stage iframe {
+      border: none;
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 100%;
+    }
+
+    .stage-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .stage-info {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      display: flex;
+      gap: 12px;
+      pointer-events: auto;
+    }
+
+    .info-chip {
+      padding: 10px 16px;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-weight: 600;
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .live-indicator {
+      width: 8px;
+      height: 8px;
+      background: #ef4444;
+      border-radius: 50%;
+      animation: pulse 2s ease infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+      50% { opacity: 0.8; box-shadow: 0 0 0 4px rgba(239, 68, 68, 0); }
+    }
+
+    .stage-badge {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      padding: 10px 16px;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: var(--radius-md);
+      font-size: 12px;
+      font-weight: 700;
+      color: white;
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      background: #10b981;
+      border-radius: 50%;
+    }
+
+    /* =========================================================
+       FLOATING DOCK (Bottom Command Center)
+       ========================================================= */
+    .dock {
+      grid-area: dock;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px 32px;
+      background: transparent;
+      position: relative;
+      z-index: 200;
+    }
+
+    .dock-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 20px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-xl);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.5);
+    }
+
+    .dock-section {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 8px;
+      position: relative;
+    }
+
+    .dock-section::after {
+      content: '';
+      position: absolute;
+      right: -4px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 1px;
+      height: 24px;
+      background: var(--border-subtle);
+    }
+
+    .dock-section:last-child::after {
+      display: none;
+    }
+
+    .dock-btn {
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--surface-0);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .dock-btn:hover {
+      background: var(--surface-0);
+      color: var(--accent);
+      border-color: var(--accent);
+      transform: translateY(-3px) scale(1.05);
+      box-shadow: var(--shadow-lift);
+    }
+
+    .dock-btn:active {
+      transform: translateY(-1px) scale(1.02);
+    }
+
+    .dock-btn.active {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    .dock-btn.danger {
+      background: #fef2f2;
+      color: #dc2626;
+      border-color: #fecaca;
+    }
+
+    .dock-btn.danger:hover {
+      background: #dc2626;
+      color: white;
+      border-color: #dc2626;
+    }
+
+    .dock-btn.primary {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    .dock-btn.primary:hover {
+      background: var(--accent-hover);
+      border-color: var(--accent-hover);
+    }
+
+    .dock-btn .tooltip {
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%) scale(0.9);
+      padding: 6px 10px;
+      background: rgba(0, 0, 0, 0.9);
+      color: white;
+      font-size: 11px;
+      font-weight: 500;
+      border-radius: 6px;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.2s ease;
+    }
+
+    .dock-btn:hover .tooltip {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+    }
+
+    /* =========================================================
+       SIDEBAR
+       ========================================================= */
+    .sidebar {
+      grid-area: sidebar;
+      background: var(--glass-bg);
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
+      border-left: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 50;
+      box-shadow: -4px 0 24px rgba(0, 0, 0, 0.04);
+    }
+
+    .sidebar-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 0 20px;
+      background: var(--surface-0);
+    }
+
+    .sidebar-tab {
+      flex: 1;
+      padding: 16px 12px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border-bottom: 2px solid transparent;
+      position: relative;
+    }
+
+    .sidebar-tab:hover {
+      color: var(--text-secondary);
+      background: rgba(0, 0, 0, 0.02);
+    }
+
+    .sidebar-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    .sidebar-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    .participant {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-radius: var(--radius-md);
+      margin-bottom: 8px;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+    }
+
+    .participant:hover {
+      background: var(--surface-0);
+      border-color: var(--border-subtle);
+    }
+
+    .participant-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: white;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .mic-status {
+      position: absolute;
+      bottom: -2px;
+      right: -2px;
+      width: 18px;
+      height: 18px;
+      background: var(--surface-0);
+      border: 2px solid var(--surface-0);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .mic-icon {
+      width: 12px;
+      height: 12px;
+    }
+
+    .mic-status.muted .mic-icon {
+      color: #dc2626;
+    }
+
+    .mic-status.active .mic-icon {
+      color: #10b981;
+    }
+
+    .participant-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .participant-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .participant-status {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .chat-message {
+      margin-bottom: 16px;
+    }
+
+    .chat-sender {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+    }
+
+    .chat-text {
+      font-size: 14px;
+      color: var(--text-primary);
+      line-height: 1.5;
+    }
+
+    .chat-input-container {
+      margin-top: auto;
+      padding: 16px 20px;
+      border-top: 1px solid var(--border-subtle);
+      background: var(--surface-0);
+    }
+
+    .chat-input {
+      width: 100%;
+      padding: 12px 14px;
+      background: var(--surface-0);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      color: var(--text-primary);
+      font-size: 14px;
+      outline: none;
+      transition: all 0.2s ease;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .chat-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px var(--accent-glow), var(--shadow-soft);
+    }
+
+    /* =========================================================
+       RESPONSIVE
+       ========================================================= */
+    @media (max-width: 1200px) {
+      .app-shell {
+        grid-template-columns: var(--sidenav-width) 1fr;
+        grid-template-areas:
+          "sidenav topbar"
+          "sidenav main"
+          "dock dock";
+      }
+      .sidebar {
+        display: none;
+      }
+    }
+
+    @media (max-width: 768px) {
+      :root {
+        --sidenav-width: 72px;
+        --dock-height: 64px;
+      }
+      .app-shell {
+        grid-template-columns: var(--sidenav-width) 1fr;
+      }
+      .nav-item span {
+        display: none;
+      }
+      .nav-section-title {
+        display: none;
+      }
+      .sidenav-title {
+        display: none;
+      }
+      .sidenav-header {
+        justify-content: center;
+      }
+      .brand-icon {
+        display: none;
+      }
+      .brand {
+        font-size: 16px;
+      }
+      .search-box {
+        display: none;
+      }
+      .tenant-selector {
+        display: none;
+      }
+      .stage-container {
+        padding: 16px;
+      }
+      .dock-container {
+        gap: 6px;
+        padding: 8px 14px;
+      }
+      .dock-btn {
+        width: 40px;
+        height: 40px;
+      }
+      .dock-section {
+        padding: 0 4px;
+      }
+    }
+
+    /* Scrollbar styling */
+    ::-webkit-scrollbar {
+      width: 10px;
+      height: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border-subtle);
+      border-radius: 5px;
+      border: 2px solid transparent;
+      background-clip: padding-box;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--text-muted);
+      border: 2px solid transparent;
+      background-clip: padding-box;
+    }
+
+    /* Focus visible */
+    *:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    /* Smooth transitions */
+    * {
+      transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M4 6L10 3L16 6V14L10 17L4 14V6Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <span>MeauxOS</span>
+      </div>
+      
+      <div class="tenant-selector">
+        <div class="tenant-icon">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path d="M7 2L2 4.5L7 7L12 4.5L7 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+            <path d="M2 9.5L7 12L12 9.5" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <span>MeauxAbility Nonprofit</span>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path d="M3 5L6 8L9 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+
+      <div class="search-box">
+        <svg class="search-icon" width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <circle cx="8" cy="8" r="5.5" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M12 12L15.5 15.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <input type="text" class="search-input" placeholder="Quick search...">
+        <span class="kbd-hint">⌘ K</span>
+      </div>
+
+      <div class="topbar-actions">
+        <button class="icon-btn" aria-label="Notifications">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M6.5 16.5C6.5 17.6046 7.39543 18.5 8.5 18.5C9.60457 18.5 10.5 17.6046 10.5 16.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M3 9C3 6.23858 5.23858 4 8 4V4C10.7614 4 13 6.23858 13 9V12L14.5 14H1.5L3 12V9Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          </svg>
+          <span class="badge">4</span>
+        </button>
+        <button class="icon-btn" aria-label="Help">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M10 14V14.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M10 11C10 10.5 10.5 10 11 9.5C11.5 9 12 8.5 12 7.5C12 6.39543 11.1046 5.5 10 5.5C8.89543 5.5 8 6.39543 8 7.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </button>
+        <div class="user-avatar" aria-label="User menu">AU</div>
+      </div>
+    </header>
+
+    <!-- SIDENAV -->
+    <nav class="sidenav">
+      <div class="sidenav-header">
+        <div class="sidenav-logo">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M5 7L12 4L19 7V17L12 20L5 17V7Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="sidenav-title">MeauxAccess</div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-item">
+          <div class="nav-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M3 4H8V9H3V4Z" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M12 4H17V9H12V4Z" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M3 13H8V18H3V13Z" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M12 13H17V18H12V13Z" stroke="currentColor" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <span>Projects</span>
+        </div>
+        <div class="nav-item">
+          <div class="nav-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <rect x="4" y="4" width="12" height="12" rx="1" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M7 7H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M7 10H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M7 13H10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <span>Library</span>
+        </div>
+        <div class="nav-item">
+          <div class="nav-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <rect x="4" y="4" width="12" height="12" rx="1" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M4 8H16" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M8 4V8" stroke="currentColor" stroke-width="1.5"/>
+              <circle cx="7" cy="11.5" r="0.5" fill="currentColor"/>
+              <circle cx="10" cy="11.5" r="0.5" fill="currentColor"/>
+              <circle cx="13" cy="11.5" r="0.5" fill="currentColor"/>
+            </svg>
+          </div>
+          <span>Tasks</span>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-section-title">Memaux Apps</div>
+        <div class="nav-item">
+          <div class="nav-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <rect x="3" y="5" width="14" height="10" rx="1" stroke="currentColor" stroke-width="1.5"/>
+              <circle cx="7.5" cy="9" r="1.5" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M14 12L11 10L3 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <span>MeauxPHOTO</span>
+        </div>
+        <div class="nav-item">
+          <div class="nav-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M5 4H15V16H5V4Z" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M8 7H12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M8 10H12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M8 13H10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <span>MeauxDOC</span>
+        </div>
+        <div class="nav-item">
+          <div class="nav-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <circle cx="10" cy="10" r="6" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M10 6V10H14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M5 3L3 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M15 3L17 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <span>MeauxCAD</span>
+        </div>
+        <div class="nav-item">
+          <div class="nav-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M10 3C6.5 3 4 5 4 8C4 9.5 5 11 6.5 11.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M10 3C13.5 3 16 5 16 8C16 9.5 15 11 13.5 11.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <rect x="7" y="10" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <span>MeauxCloud</span>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-section-title">MeauxChat</div>
+        <div class="nav-item active">
+          <div class="nav-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <rect x="3" y="7" width="14" height="9" rx="1" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M7 10H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <circle cx="6" cy="5" r="1.5" stroke="currentColor" stroke-width="1.5"/>
+              <circle cx="10" cy="3" r="1.5" stroke="currentColor" stroke-width="1.5"/>
+              <circle cx="14" cy="5" r="1.5" stroke="currentColor" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <span>Talk</span>
+        </div>
+        <div class="nav-item">
+          <div class="nav-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <rect x="3" y="5" width="14" height="10" rx="1" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M3 8L10 12L17 8" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <span>Mail</span>
+        </div>
+        <div class="nav-item">
+          <div class="nav-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <rect x="4" y="4" width="12" height="12" rx="1" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M4 8H16" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M8 2V6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M12 2V6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <span>Calendar</span>
+        </div>
+        <div class="nav-item">
+          <div class="nav-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <rect x="3" y="6" width="14" height="10" rx="1" stroke="currentColor" stroke-width="1.5"/>
+              <circle cx="10" cy="4" r="1.5" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M7 10H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <span>Meet</span>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-section-title">MediaKit</div>
+        <div class="nav-item">
+          <div class="nav-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <rect x="4" y="4" width="12" height="12" rx="1" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M8 8L12 10.5L8 13V8Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <span>Dev Console</span>
+        </div>
+        <div class="nav-item">
+          <div class="nav-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M10 3V7M10 7L7 10M10 7L13 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M4 12V15C4 15.5523 4.44772 16 5 16H15C15.5523 16 16 15.5523 16 15V12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <span>Integrations</span>
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-section-title">Account</div>
+        <div class="nav-item">
+          <div class="nav-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/>
+              <circle cx="10" cy="10" r="3" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M10 7V6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M13 10H14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M10 13V14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M7 10H6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <span>Settings</span>
+          <span class="nav-badge">NEW</span>
+        </div>
+        <div class="nav-item">
+          <div class="nav-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <rect x="5" y="7" width="10" height="9" rx="1" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M8 7V6C8 4.89543 8.89543 4 10 4V4C11.1046 4 12 4.89543 12 6V7" stroke="currentColor" stroke-width="1.5"/>
+              <circle cx="10" cy="11.5" r="1" fill="currentColor"/>
+            </svg>
+          </div>
+          <span>Vault</span>
+        </div>
+        <div class="nav-item">
+          <div class="nav-icon">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M4 7L10 4L16 7V13L10 16L4 13V7Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+              <path d="M7 9L10 11L13 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <span>Audit</span>
+        </div>
+      </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+      <div class="stage-bg-gradient"></div>
+      <div class="stage-container">
+        <div class="stage-card">
+          <div class="video-stage">
+            <div style="position: relative; padding-top: 56.25%;">
+              <iframe
+                src="https://customer-8y3087qnrzz7ql2e.cloudflarestream.com/e96c4824b5075976ed815126b813d3f8/iframe"
+                style="border: none; position: absolute; top: 0; left: 0; height: 100%; width: 100%;"
+                allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+                allowfullscreen="true"
+              ></iframe>
+            </div>
+            
+            <div class="stage-overlay">
+              <div class="stage-info">
+                <div class="info-chip">
+                  <div class="live-indicator"></div>
+                  <span>LIVE</span>
+                </div>
+                <div class="info-chip">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <circle cx="7" cy="7" r="6" stroke="currentColor" stroke-width="1.5"/>
+                    <path d="M7 3.5V7L9.5 9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                  </svg>
+                  <span>00:12:34</span>
+                </div>
+              </div>
+              
+              <div class="stage-badge">
+                <div class="badge-dot"></div>
+                <span>HD • Secure</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-tabs">
+        <div class="sidebar-tab active">Participants</div>
+        <div class="sidebar-tab">Chat</div>
+        <div class="sidebar-tab">Notes</div>
+        <div class="sidebar-tab">Links</div>
+      </div>
+
+      <div class="sidebar-content">
+        <!-- Participants List -->
+        <div class="participant">
+          <div class="participant-avatar">
+            AU
+            <div class="mic-status active">
+              <svg class="mic-icon" viewBox="0 0 12 12" fill="none">
+                <path d="M4 4.5C4 3.67157 4.67157 3 5.5 3C6.32843 3 7 3.67157 7 4.5V6C7 6.82843 6.32843 7.5 5.5 7.5C4.67157 7.5 4 6.82843 4 6V4.5Z" stroke="currentColor" stroke-width="1.2"/>
+                <path d="M5.5 7.5V9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+              </svg>
+            </div>
+          </div>
+          <div class="participant-info">
+            <div class="participant-name">Admin User (You)</div>
+            <div class="participant-status">Speaking</div>
+          </div>
+        </div>
+
+        <div class="participant">
+          <div class="participant-avatar" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
+            AB
+            <div class="mic-status active">
+              <svg class="mic-icon" viewBox="0 0 12 12" fill="none">
+                <path d="M4 4.5C4 3.67157 4.67157 3 5.5 3C6.32843 3 7 3.67157 7 4.5V6C7 6.82843 6.32843 7.5 5.5 7.5C4.67157 7.5 4 6.82843 4 6V4.5Z" stroke="currentColor" stroke-width="1.2"/>
+                <path d="M5.5 7.5V9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+              </svg>
+            </div>
+          </div>
+          <div class="participant-info">
+            <div class="participant-name">Alex Baker</div>
+            <div class="participant-status">Active</div>
+          </div>
+        </div>
+
+        <div class="participant">
+          <div class="participant-avatar" style="background: linear-gradient(135deg, #14b8a6, #0d9488);">
+            SC
+            <div class="mic-status muted">
+              <svg class="mic-icon" viewBox="0 0 12 12" fill="none">
+                <path d="M4 4.5C4 3.67157 4.67157 3 5.5 3C6.32843 3 7 3.67157 7 4.5V6C7 6.82843 6.32843 7.5 5.5 7.5C4.67157 7.5 4 6.82843 4 6V4.5Z" stroke="currentColor" stroke-width="1.2"/>
+                <path d="M5.5 7.5V9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                <path d="M2.5 2.5L9.5 9.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+              </svg>
+            </div>
+          </div>
+          <div class="participant-info">
+            <div class="participant-name">Sarah Chen</div>
+            <div class="participant-status">Muted</div>
+          </div>
+        </div>
+
+        <div class="participant">
+          <div class="participant-avatar" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+            DM
+            <div class="mic-status active">
+              <svg class="mic-icon" viewBox="0 0 12 12" fill="none">
+                <path d="M4 4.5C4 3.67157 4.67157 3 5.5 3C6.32843 3 7 3.67157 7 4.5V6C7 6.82843 6.32843 7.5 5.5 7.5C4.67157 7.5 4 6.82843 4 6V4.5Z" stroke="currentColor" stroke-width="1.2"/>
+                <path d="M5.5 7.5V9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+              </svg>
+            </div>
+          </div>
+          <div class="participant-info">
+            <div class="participant-name">David Martinez</div>
+            <div class="participant-status">Active</div>
+          </div>
+        </div>
+
+        <div class="participant">
+          <div class="participant-avatar" style="background: linear-gradient(135deg, #ec4899, #db2777);">
+            EP
+            <div class="mic-status muted">
+              <svg class="mic-icon" viewBox="0 0 12 12" fill="none">
+                <path d="M4 4.5C4 3.67157 4.67157 3 5.5 3C6.32843 3 7 3.67157 7 4.5V6C7 6.82843 6.32843 7.5 5.5 7.5C4.67157 7.5 4 6.82843 4 6V4.5Z" stroke="currentColor" stroke-width="1.2"/>
+                <path d="M5.5 7.5V9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                <path d="M2.5 2.5L9.5 9.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+              </svg>
+            </div>
+          </div>
+          <div class="participant-info">
+            <div class="participant-name">Emily Park</div>
+            <div class="participant-status">Muted</div>
+          </div>
+        </div>
+
+        <div class="participant">
+          <div class="participant-avatar" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
+            JL
+            <div class="mic-status active">
+              <svg class="mic-icon" viewBox="0 0 12 12" fill="none">
+                <path d="M4 4.5C4 3.67157 4.67157 3 5.5 3C6.32843 3 7 3.67157 7 4.5V6C7 6.82843 6.32843 7.5 5.5 7.5C4.67157 7.5 4 6.82843 4 6V4.5Z" stroke="currentColor" stroke-width="1.2"/>
+                <path d="M5.5 7.5V9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+              </svg>
+            </div>
+          </div>
+          <div class="participant-info">
+            <div class="participant-name">Jordan Lee</div>
+            <div class="participant-status">Active</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chat-input-container">
+        <input type="text" class="chat-input" placeholder="Send a message...">
+      </div>
+    </aside>
+
+    <!-- FLOATING DOCK -->
+    <div class="dock">
+      <div class="dock-container">
+        <!-- Call Controls Section -->
+        <div class="dock-section">
+          <button class="dock-btn" aria-label="Mute">
+            <span class="tooltip">Mute</span>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M6 7.5C6 5.567 7.567 4 9.5 4C11.433 4 13 5.567 13 7.5V9.5C13 11.433 11.433 13 9.5 13C7.567 13 6 11.433 6 9.5V7.5Z" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M9.5 13V15.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M7 15.5H12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </button>
+
+          <button class="dock-btn" aria-label="Camera">
+            <span class="tooltip">Camera</span>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <rect x="3" y="6" width="11" height="8" rx="1" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M14 8.5L17 6.5V13.5L14 11.5" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+            </svg>
+          </button>
+
+          <button class="dock-btn" aria-label="Share Screen">
+            <span class="tooltip">Share Screen</span>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <rect x="3" y="4" width="14" height="10" rx="1" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M10 7V10M10 10L8.5 8.5M10 10L11.5 8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+
+          <button class="dock-btn" aria-label="Captions">
+            <span class="tooltip">Captions</span>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <rect x="3" y="6" width="14" height="8" rx="1" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M6 9H8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M10 9H14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M6 11H10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </button>
+
+          <button class="dock-btn" aria-label="Reactions">
+            <span class="tooltip">Reactions</span>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <circle cx="10" cy="10" r="6" stroke="currentColor" stroke-width="1.5"/>
+              <circle cx="8" cy="9" r="1" fill="currentColor"/>
+              <circle cx="12" cy="9" r="1" fill="currentColor"/>
+              <path d="M7.5 12C8 13 9 13.5 10 13.5C11 13.5 12 13 12.5 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </button>
+
+          <button class="dock-btn" aria-label="More Options">
+            <span class="tooltip">More</span>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <circle cx="10" cy="5" r="1.5" fill="currentColor"/>
+              <circle cx="10" cy="10" r="1.5" fill="currentColor"/>
+              <circle cx="10" cy="15" r="1.5" fill="currentColor"/>
+            </svg>
+          </button>
+
+          <button class="dock-btn danger" aria-label="Leave Call">
+            <span class="tooltip">Leave Call</span>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M6 5.5C7.5 4.5 9 4 10 4C11 4 12.5 4.5 14 5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M6 5.5L4 9.5L6 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M14 5.5L16 9.5L14 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Command & Chat Section -->
+        <div class="dock-section">
+          <button class="dock-btn" aria-label="Command Palette">
+            <span class="tooltip">Command Palette</span>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <rect x="3" y="4" width="14" height="12" rx="1" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M3 8H17" stroke="currentColor" stroke-width="1.5"/>
+              <circle cx="10" cy="11.5" r="1.5" stroke="currentColor" stroke-width="1.5"/>
+            </svg>
+          </button>
+
+          <button class="dock-btn" aria-label="Chat">
+            <span class="tooltip">Chat</span>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M3 6C3 4.89543 3.89543 4 5 4H15C16.1046 4 17 4.89543 17 6V11C17 12.1046 16.1046 13 15 13H9L5 16V13V6Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+              <path d="M7 8H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M7 10.5H10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Tools Section -->
+        <div class="dock-section">
+          <button class="dock-btn" aria-label="Screen Recording">
+            <span class="tooltip">Recording</span>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <circle cx="10" cy="10" r="6" stroke="currentColor" stroke-width="1.5"/>
+              <circle cx="10" cy="10" r="2.5" fill="currentColor"/>
+            </svg>
+          </button>
+
+          <button class="dock-btn" aria-label="Whiteboard">
+            <span class="tooltip">Whiteboard</span>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <rect x="3" y="3" width="14" height="14" rx="1" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M7 7L10 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <circle cx="12" cy="9" r="1" fill="currentColor"/>
+              <path d="M13 13H7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </button>
+
+          <button class="dock-btn" aria-label="Notes">
+            <span class="tooltip">Notes</span>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M5 4H15V16H5V4Z" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M8 7H12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M8 10H12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <path d="M8 13H10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </button>
+
+          <button class="dock-btn primary" aria-label="Add Tools">
+            <span class="tooltip">Add Tools</span>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M10 5V15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              <path d="M5 10H15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script nonce="OTc4MzY2Mjc5LDIwMzE5NjExMjI=">
+    // Enhanced interactivity for the new glassmorphic UI
+    document.addEventListener('DOMContentLoaded', () => {
+      // Sidebar tab switching
+      const tabs = document.querySelectorAll('.sidebar-tab');
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          tabs.forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+        });
+      });
+
+      // Dock button interactions (toggle active state except danger buttons)
+      const dockBtns = document.querySelectorAll('.dock-btn:not(.danger):not(.primary)');
+      dockBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          btn.classList.toggle('active');
+        });
+      });
+
+      // Command palette keyboard shortcut
+      document.addEventListener('keydown', (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+          e.preventDefault();
+          document.querySelector('.search-input').focus();
+        }
+      });
+
+      // Theme switcher (for demo purposes)
+      // You can add UI controls to switch between themes
+      window.switchTheme = (theme) => {
+        document.documentElement.setAttribute('data-brand', theme);
+      };
+
+      // Add subtle hover animation to nav items
+      const navItems = document.querySelectorAll('.nav-item');
+      navItems.forEach(item => {
+        item.addEventListener('mouseenter', function() {
+          this.style.transform = 'translateX(4px)';
+        });
+        item.addEventListener('mouseleave', function() {
+          this.style.transform = 'translateX(0)';
+        });
+      });
+    });
+  </script>
+</body>
+</html>
