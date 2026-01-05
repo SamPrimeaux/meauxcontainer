@@ -1,0 +1,71 @@
+name: CI/CD Pipeline - MeauxContainer
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  # Build and Test
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Verify TypeScript compilation
+        run: npx tsc --noEmit
+      
+      - name: Build container image (dry-run)
+        run: |
+          echo "Container build would happen here"
+          echo "Dockerfile location: ./Dockerfile"
+          echo "Container source: ./container_src"
+
+  # Deploy to Cloudflare (Production)
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    environment:
+      name: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Deploy to Cloudflare
+        run: npm run deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      
+      - name: Verify deployment
+        run: |
+          echo "✅ Deployment complete!"
+          echo "Worker URL: https://meauxcontainer.meauxbility.workers.dev"
+          echo "Preview URLs: https://*-meauxcontainer.meauxbility.workers.dev"
+

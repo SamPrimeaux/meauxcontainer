@@ -2,6 +2,7 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "meauxcontainer",
 	"main": "src/index.ts",
+	"account_id": "ede6590ac0d2fb7daf155b35653457b2",
 	"compatibility_date": "2025-10-08",
 	"compatibility_flags": ["nodejs_compat"],
 	"observability": {
