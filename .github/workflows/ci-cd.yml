@@ -31,6 +31,14 @@ jobs:
       - name: Verify TypeScript compilation
         run: npx tsc --noEmit
       
+      - name: Verify HTML file exists
+        run: |
+          if [ ! -f "index.html" ]; then
+            echo "❌ index.html not found"
+            exit 1
+          fi
+          echo "✅ index.html found"
+      
       - name: Build container image (dry-run)
         run: |
           echo "Container build would happen here"
